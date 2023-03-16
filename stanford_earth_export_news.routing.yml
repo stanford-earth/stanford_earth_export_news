@@ -1,0 +1,11 @@
+entity.stanford_earth_export_news.output:
+  # JSON output of news
+  path: '/export-news'
+  defaults:
+    _controller: '\Drupal\stanford_earth_export_news\Controller\StanfordEarthExportNewsController::output'
+    _title: 'Stanford Earth News Export'
+  options:
+    no_cache: TRUE
+  requirements:
+    _permission: 'administer site configuration'
+
