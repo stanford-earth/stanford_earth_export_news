@@ -1,0 +1,10 @@
+{
+  "name": "stanford-earth/stanford_earth_export_news",
+  "description": "Export News content to JSON.",
+  "type": "stanford-module",
+  "homepage": "https://github.com/stanford-earth/stanford_earth_export_news",
+  "authors": [],
+  "license": "GPL-2.0+",
+  "minimum-stability": "dev",
+  "require": {}
+}
