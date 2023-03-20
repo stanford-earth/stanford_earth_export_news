@@ -99,10 +99,15 @@ class StanfordEarthExportNewsController extends ControllerBase
           if (!empty($pval)) {
             foreach ($pval as $ppval) {
               if (!empty($ppval['value'])) {
-                $pvalues[$field_name][] = $ppval['value'];
+                $pvalues[$field_name][] = $this->tokenizeMediaTags($ppval['value']);
               }
               else if (!empty($ppval['target_id'])) {
-                $pvalues[$field_name] = $this->getParagraphValues($ppval['target_id']);
+                if (strpos($field_name, 'media') !== false) {
+                  $pvalues[$field_name] = $this->getMedia($pval);
+                }
+                else {
+                  $pvalues[$field_name] = $this->getParagraphValues($ppval['target_id']);
+                }
               }
               else if (!empty($ppval)) {
                 $pvalues[$field_name] = $ppval;
@@ -186,6 +191,27 @@ class StanfordEarthExportNewsController extends ControllerBase
     return ['id' => strval($mid), 'type' => $bundle];
   }
 
+  private function tokenizeMediaTags($value) {
+    if (!empty($value) && strpos($value,"<drupal-media") !== false) {
+      $newvalue = $value;
+      $val_pos = 0;
+      while (strpos($value, "<drupal-media", $val_pos) !== false) {
+        $pos1 = strpos($value, "<drupal-media", $val_pos);
+        $pos2 = strpos($value, "uuid=\"", $pos1);
+        $pos3 = strpos($value, "\"", $pos2+6);
+        $pos4 = strpos($value, "/drupal-media",$pos3);
+        $uuid = substr($value, $pos2+6, $pos3-($pos2+6));
+        $mid = $this->getMedia($uuid, true);
+        if (!empty($mid['id'])) {
+          $newvalue = str_replace($uuid, '['.$mid['id'].']',$newvalue);
+        }
+        $val_pos = $pos4+ 13;
+      }
+      $value = $newvalue;
+    }
+    return $value;
+  }
+
   /**
    * Return an JSON file containing news data.
    *
@@ -216,6 +242,10 @@ class StanfordEarthExportNewsController extends ControllerBase
       ->execute();
     $nodes = \Drupal\node\Entity\Node::loadMultiple($nids);
     foreach ($nodes as $node) {
+      $count = $count + 1;
+      if (fmod($count, 100) == 0) {
+        $xyz = 1;
+      }
       $item = [
         'nid' => $node->id(),
         'title' => $node->getTitle(),
@@ -297,20 +327,7 @@ class StanfordEarthExportNewsController extends ControllerBase
           }
           else if ($field_name === 'field_s_news_summary') {
             if (!empty($field_value[0]['value'])) {
-              $value = $field_value[0]['value'];
-              $val_pos = 0;
-              while (strpos($value, "drupal-media", $val_pos) !== false) {
-                $pos1 = strpos($value, "drupal-media", $val_pos);
-                $pos2 = strpos($value, "uuid=\"", $pos1);
-                $pos3 = strpos($value, "\"", $pos2+6);
-                $pos4 = strpos($value, "/drupal-media");
-                $uuid = substr($value, $pos2+6, $pos3-($pos2+6));
-                $mid = $this->getMedia($uuid, true);
-                if (!empty($mid['id'])) {
-                  $field_value[0]['value'] = str_replace($uuid, '['.$mid['id'].']',$field_value[0]['value']);
-                }
-                $val_pos = $pos4+ 13;
-              }
+              $field_value[0]['value'] = $this->tokenizeMediaTags($field_value[0]['value']);
             }
           }
           else if ($field_name === 'field_s_news_rich_content') {
