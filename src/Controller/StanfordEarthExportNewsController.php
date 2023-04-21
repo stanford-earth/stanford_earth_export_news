@@ -8,6 +8,7 @@ use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\PageCache\ResponsePolicy\KillSwitch;
+use Drupal\Core\Entity\Query\QueryInterface;
 
 /**
  * Export news content nodes to JSON.
@@ -79,7 +80,15 @@ class StanfordEarthExportNewsController extends ControllerBase
       }
       $field_value = $terms;
       foreach ($terms as $key => $value) {
-        $this->taxonomyTerms[$vocabulary][$value['term_name']] += 1;
+        if (!isset($this->taxonomyTerms[$vocabulary])) {
+          $this->taxonomyTerms[$vocabulary] = [];
+        }
+        if (isset($this->taxonomyTerms[$vocabulary][$value['term_name']])) {
+          $this->taxonomyTerms[$vocabulary][$value['term_name']] += 1;
+        }
+        else {
+          $this->taxonomyTerms[$vocabulary][$value['term_name']] = 1;
+        }
       }
     }
     return $terms;
@@ -94,7 +103,12 @@ class StanfordEarthExportNewsController extends ControllerBase
       $fields = $paragraph->getFields();
       foreach ($fields as $field_name => $field_obj) {
         if (substr($field_name, 0, 6) === "field_") {
-          $this->paragraph_types[$field_name] += 1;
+          if (isset($this->paragraph_types[$field_name])) {
+            $this->paragraph_types[$field_name] += 1;
+          }
+          else {
+            $this->paragraph_types[$field_name] = 1;
+          }
           $pval = $paragraph->get($field_name)->getValue();
           if (!empty($pval)) {
             foreach ($pval as $ppval) {
@@ -106,7 +120,7 @@ class StanfordEarthExportNewsController extends ControllerBase
                   $pvalues[$field_name] = $this->getMedia($pval);
                 }
                 else {
-                  $pvalues[$field_name] = $this->getParagraphValues($ppval['target_id']);
+                  $pvalues[$field_name][$ppval['target_id']] = $this->getParagraphValues($ppval['target_id']);
                 }
               }
               else if (!empty($ppval)) {
@@ -179,16 +193,19 @@ class StanfordEarthExportNewsController extends ControllerBase
       }
     }
     unset($media_info['target_id']);
-    if ($bundle === 'image') {
-      $this->images[strval($mid)] = $media_info;
+    if (isset($bundle)) {
+      if ($bundle === 'image') {
+        $this->images[strval($mid)] = $media_info;
+      } else if ($bundle === 'file') {
+        $this->files[strval($mid)] = $media_info;
+      } else if ($bundle === 'video') {
+        $this->videos[strval($mid)] = $media_info;
+      }
+      return ['id' => strval($mid), 'type' => $bundle];
     }
-    else if ($bundle === 'file') {
-      $this->files[strval($mid)] = $media_info;
+    else {
+      return "";
     }
-    else if ($bundle === 'video') {
-      $this->videos[strval($mid)] = $media_info;
-    }
-    return ['id' => strval($mid), 'type' => $bundle];
   }
 
   private function tokenizeMediaTags($value) {
@@ -232,14 +249,73 @@ class StanfordEarthExportNewsController extends ControllerBase
     }
     $start = 'all';
     $end = 'all';
-    $newsType = 'all';
+    $node = '';
+    if (!empty($params['node'])) {
+      $node = $params['node'];
+    }
+    $category = '';
+    if (!empty($params['category'])) {
+      $catstr = $params['category'];
+      switch ($catstr) {
+        case 'alumni': {
+          $category = '151';
+          break;
+        }
+        case 'career-profile': {
+          $category = '91';
+          break;
+        }
+        case 'comings-and-goings': {
+          $category = '161';
+          break;
+        }
+        case 'deans-desk': {
+          $category = '156';
+          break;
+        }
+        case 'media-mention': {
+          $category = '76';
+          break;
+        }
+        case 'school-highlight': {
+          $category = '71';
+          break;
+        }
+        case 'earth-matters': {
+          $category = '81';
+          break;
+        }
+        case 'honors-and-awards': {
+          $category = '711';
+          break;
+        }
+        default: $category = '';
+      }
+    }
+
+    if (empty($node) && empty($category) && empty($year)) {
+      return [
+        '#type' => 'markup',
+        '#markup' => $this->t('You must include at least one url parameter such as<br />?year=2017, ?year=2018, etc.<br />or ?category=alumni, ?category=career-profile, ?category=comings-and-goings, ?category=deans-desk, ?category=media-mention, ?category=school-highlight, ?category=earth-matters, ?category=honors-and-awards'),
+      ];
+    }
+
 
     $items = [];
-
-    $nids = \Drupal::entityQuery('node')
+    $query = \Drupal::entityQuery('node')
       ->condition('status', 1)
-      ->condition('type', 'stanford_news')
-      ->execute();
+      ->condition('type', 'stanford_news');
+    if (!empty($node)) {
+      $query = $query->condition('nid', $node);
+    }
+    if (!empty($category)) {
+      $query = $query->condition('field_s_news_category', $category);
+    }
+    if (!empty($params['year'])) {
+      $query = $query->condition('field_s_news_date', $params['year'],'STARTS_WITH');
+    }
+    $nids = $query->execute();
+
     $nodes = \Drupal\node\Entity\Node::loadMultiple($nids);
     foreach ($nodes as $node) {
       $count = $count + 1;
@@ -331,18 +407,26 @@ class StanfordEarthExportNewsController extends ControllerBase
             }
           }
           else if ($field_name === 'field_s_news_rich_content') {
-            //if ($item['nid'] === '24031') {
-              $paragraphs = [];
-              foreach ($field_value as $pid_value) {
-                $paragraphs[] = $this->getParagraphValues($pid_value['target_id']);
-              }
-              $field_value = $paragraphs;
-            //}
+            $paragraphs = [];
+            foreach ($field_value as $pid_value) {
+              $paragraphs[] = $this->getParagraphValues($pid_value['target_id']);
+            }
+            $field_value = $paragraphs;
           }
           $item[$field_name] = $field_value;
         }
+        else {
+          if ($field_name === 'path') {
+            $paths = $node->get($field_name)->getValue();
+            foreach ($paths as $path) {
+              unset($path['pid']);
+              unset($path['langcode']);
+            }
+            $item[$field_name][] = $path;
+          }
+        }
       }
-      $items[] = $item;
+      $items[$item['nid']] = $item;
     }
     $this->killSwitch->trigger();
     $json = [
