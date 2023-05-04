@@ -7,5 +7,5 @@ entity.stanford_earth_export_news.output:
   options:
     no_cache: TRUE
   requirements:
-    _permission: 'administer site configuration'
+    _permission: 'access content'
 

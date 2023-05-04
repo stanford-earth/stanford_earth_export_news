@@ -307,12 +307,13 @@ class StanfordEarthExportNewsController extends ControllerBase
       ->condition('type', 'stanford_news');
     if (!empty($node)) {
       $query = $query->condition('nid', $node);
-    }
-    if (!empty($category)) {
-      $query = $query->condition('field_s_news_category', $category);
-    }
-    if (!empty($params['year'])) {
-      $query = $query->condition('field_s_news_date', $params['year'],'STARTS_WITH');
+    } else {
+      if (!empty($category)) {
+        $query = $query->condition('field_s_news_category', $category);
+      }
+      if (!empty($params['year'])) {
+        $query = $query->condition('field_s_news_date', $params['year'], 'STARTS_WITH');
+      }
     }
     $nids = $query->execute();
 
