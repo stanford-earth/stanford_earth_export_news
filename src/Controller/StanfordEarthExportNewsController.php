@@ -201,7 +201,10 @@ class StanfordEarthExportNewsController extends ControllerBase
       } else if ($bundle === 'video') {
         $this->videos[strval($mid)] = $media_info;
       }
-      return ['id' => strval($mid), 'type' => $bundle];
+      $media_info['id'] = strval($mid);
+      $media_info['type'] = $bundle;
+      return $media_info;
+      //return ['id' => strval($mid), 'type' => $bundle];
     }
     else {
       return "";
