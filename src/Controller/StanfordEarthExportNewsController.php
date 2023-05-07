@@ -404,7 +404,11 @@ class StanfordEarthExportNewsController extends ControllerBase
             $field_value = $this->getMedia($field_value);
           }
           else if ($field_name === 'field_s_news_top_media') {
-            $field_value = $this->getMedia($field_value);
+            $paragraphs = [];
+            foreach ($field_value as $pid_value) {
+              $paragraphs[] = $this->getParagraphValues($pid_value['target_id']);
+            }
+            $field_value = $paragraphs;
           }
           else if ($field_name === 'field_s_news_summary') {
             if (!empty($field_value[0]['value'])) {
