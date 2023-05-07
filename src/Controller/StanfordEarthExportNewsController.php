@@ -150,7 +150,7 @@ class StanfordEarthExportNewsController extends ControllerBase
     if (!empty($media)) {
       $bundle = $media->bundle(); //  $media->get('bundle')->getValue();
       if (empty($bundle)) {
-        return "";
+        return [];
       }
       $mid = $media->id();
       $media_info = ['mid' => $mid, 'type' => $bundle ];
@@ -168,7 +168,7 @@ class StanfordEarthExportNewsController extends ControllerBase
         $media_info = array_merge($media_info,  $file[0]);
       }
       else {
-        return "";
+        return [];
       }
       $media_info['name'] = "";
       $name = $media->get('name')->getValue();
@@ -203,11 +203,12 @@ class StanfordEarthExportNewsController extends ControllerBase
       }
       $media_info['id'] = strval($mid);
       $media_info['type'] = $bundle;
-      return $media_info;
+      unset($media_info['mid']);
+      return [$media_info];
       //return ['id' => strval($mid), 'type' => $bundle];
     }
     else {
-      return "";
+      return [];
     }
   }
 
