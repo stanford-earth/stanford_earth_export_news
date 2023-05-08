@@ -113,7 +113,7 @@ class StanfordEarthExportNewsController extends ControllerBase
           if (!empty($pval)) {
             foreach ($pval as $ppval) {
               if (!empty($ppval['value'])) {
-                $pvalues[$field_name][] = $this->tokenizeMediaTags($ppval['value']);
+                $pvalues[$field_name][] = $this->expandMediaInfo($ppval['value']);
               }
               else if (!empty($ppval['target_id'])) {
                 if (strpos($field_name, 'media') !== false) {
@@ -212,9 +212,10 @@ class StanfordEarthExportNewsController extends ControllerBase
     }
   }
 
-  private function tokenizeMediaTags($value) {
+  private function expandMediaInfo($value) {
+    $newvalue = ['value' => $value];
     if (!empty($value) && strpos($value,"<drupal-media") !== false) {
-      $newvalue = $value;
+      $embedded_images = [];
       $val_pos = 0;
       while (strpos($value, "<drupal-media", $val_pos) !== false) {
         $pos1 = strpos($value, "<drupal-media", $val_pos);
@@ -223,14 +224,17 @@ class StanfordEarthExportNewsController extends ControllerBase
         $pos4 = strpos($value, "/drupal-media",$pos3);
         $uuid = substr($value, $pos2+6, $pos3-($pos2+6));
         $mid = $this->getMedia($uuid, true);
-        if (!empty($mid['id'])) {
-          $newvalue = str_replace($uuid, '['.$mid['id'].']',$newvalue);
+        if (!empty($mid[0]['id'])) {
+          $embedded_images[$uuid] = $mid[0];
+          //$newvalue = str_replace($uuid, '['.$mid[0]['id'].']',$newvalue);
         }
         $val_pos = $pos4+ 13;
       }
-      $value = $newvalue;
+      if (!empty($embedded_images)) {
+        $newvalue['images'] = $embedded_images;
+      }
     }
-    return $value;
+    return $newvalue;
   }
 
   /**
@@ -412,7 +416,7 @@ class StanfordEarthExportNewsController extends ControllerBase
           }
           else if ($field_name === 'field_s_news_summary') {
             if (!empty($field_value[0]['value'])) {
-              $field_value[0]['value'] = $this->tokenizeMediaTags($field_value[0]['value']);
+              $field_value = [$this->expandMediaInfo($field_value[0]['value'])];
             }
           }
           else if ($field_name === 'field_s_news_rich_content') {
