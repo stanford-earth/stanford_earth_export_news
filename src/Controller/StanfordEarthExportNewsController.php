@@ -226,7 +226,7 @@ class StanfordEarthExportNewsController extends ControllerBase
         $mid = $this->getMedia($uuid, true);
         if (!empty($mid[0]['id'])) {
           $embedded_images[$uuid] = $mid[0];
-          $embedded_images[$uuid]['embed'] = true;
+          $embedded_images[$uuid]['embed'] = $uuid;
           //$newvalue = str_replace($uuid, '['.$mid[0]['id'].']',$newvalue);
         }
         $val_pos = $pos4+ 13;
