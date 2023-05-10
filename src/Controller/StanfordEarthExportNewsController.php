@@ -36,6 +36,8 @@ class StanfordEarthExportNewsController extends ControllerBase
 
   protected $paragraph_types;
 
+  protected $embedded_media;
+
   /**
    * Entity Type Manager
    *
@@ -56,6 +58,7 @@ class StanfordEarthExportNewsController extends ControllerBase
     $this->files = [];
     $this->videos = [];
     $this->paragraph_types = [];
+    $this->embedded_media = [];
     $this->em = \Drupal::entityTypeManager();
   }
 
@@ -213,7 +216,6 @@ class StanfordEarthExportNewsController extends ControllerBase
   }
 
   private function expandMediaInfo($value) {
-    $newvalue = ['value' => $value];
     if (!empty($value) && strpos($value,"<drupal-media") !== false) {
       $embedded_images = [];
       $val_pos = 0;
@@ -232,10 +234,11 @@ class StanfordEarthExportNewsController extends ControllerBase
         $val_pos = $pos4+ 13;
       }
       if (!empty($embedded_images)) {
-        $newvalue['images'] = $embedded_images;
+        //$newvalue['images'] = $embedded_images;
+        $this->embedded_media = array_merge($this->embedded_media, $embedded_images);
       }
     }
-    return $newvalue;
+    return $value;
   }
 
   /**
@@ -328,10 +331,8 @@ class StanfordEarthExportNewsController extends ControllerBase
 
     $nodes = \Drupal\node\Entity\Node::loadMultiple($nids);
     foreach ($nodes as $node) {
+      $this->embedded_media = [];
       $count = $count + 1;
-      if (fmod($count, 100) == 0) {
-        $xyz = 1;
-      }
       $item = [
         'nid' => $node->id(),
         'title' => $node->getTitle(),
@@ -440,6 +441,7 @@ class StanfordEarthExportNewsController extends ControllerBase
           }
         }
       }
+      $item['embedded_media'] = $this->embedded_media;
       $items[$item['nid']] = $item;
     }
     $this->killSwitch->trigger();
@@ -450,6 +452,7 @@ class StanfordEarthExportNewsController extends ControllerBase
       'files' => $this->files,
       'videos' => $this->videos,
       'media_contact_content' => $this->other_stuff,
+      'node_count' => [sizeof($items)],
       'nodes' => $items,
     ];
     return JsonResponse::create($json);
