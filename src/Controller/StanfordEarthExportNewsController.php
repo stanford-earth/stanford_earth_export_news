@@ -38,6 +38,8 @@ class StanfordEarthExportNewsController extends ControllerBase
 
   protected $embedded_media;
 
+  protected $field_media;
+
   /**
    * Entity Type Manager
    *
@@ -59,6 +61,7 @@ class StanfordEarthExportNewsController extends ControllerBase
     $this->videos = [];
     $this->paragraph_types = [];
     $this->embedded_media = [];
+    $this->field_media = [];
     $this->em = \Drupal::entityTypeManager();
   }
 
@@ -199,6 +202,9 @@ class StanfordEarthExportNewsController extends ControllerBase
     if (isset($bundle)) {
       if ($bundle === 'image') {
         $this->images[strval($mid)] = $media_info;
+        if (!$by_uuid) {
+          $this->field_media[strval($mid)] = $media_info;
+        }
       } else if ($bundle === 'file') {
         $this->files[strval($mid)] = $media_info;
       } else if ($bundle === 'video') {
@@ -332,6 +338,7 @@ class StanfordEarthExportNewsController extends ControllerBase
     $nodes = \Drupal\node\Entity\Node::loadMultiple($nids);
     foreach ($nodes as $node) {
       $this->embedded_media = [];
+      $this->field_media = [];
       $count = $count + 1;
       $item = [
         'nid' => $node->id(),
@@ -396,12 +403,21 @@ class StanfordEarthExportNewsController extends ControllerBase
             $field_value = "";
             if (!empty($paragraphs)) {
               foreach ($paragraphs as $parray) {
-                if (!empty($parray['field_p_section_highlight_cards']['field_p_highlight_card_title'][0])) {
-                  $field_value = "<span>" . $parray['field_p_section_highlight_cards']['field_p_highlight_card_title'][0]."</span>";
-                  $this->other_stuff[$field_name][$parray['field_p_section_highlight_cards']['field_p_highlight_card_title'][0]] += 1;
+                if (!empty($parray['field_highlight_cards_title'])) {
+                  $field_value = '<p>' . reset($parray['field_highlight_cards_title']) . '</p>';
                 }
-                if (!empty($parray['field_p_section_highlight_cards']['field_p_highlight_card_subtitle'][0])) {
-                  $field_value .= "<span>" . $parray['field_p_section_highlight_cards']['field_p_highlight_card_subtitle'][0]."</span>";
+                if (!empty($parray['field_p_section_highlight_cards'])) {
+                  $field_value .= '<p>';
+                  foreach ($parray['field_p_section_highlight_cards'] as $highlight_card) {
+                    if (!empty($highlight_card)) {
+                      foreach ($highlight_card as $contact) {
+                        if (!empty($contact)) {
+                          $field_value .= '<span>' . reset($contact) . '</span><br />';
+                        }
+                      }
+                    }
+                  }
+                  $field_value .= '</p>';
                 }
               }
             }
@@ -441,7 +457,20 @@ class StanfordEarthExportNewsController extends ControllerBase
           }
         }
       }
+      if (!empty($item['field_s_news_media_contacts'])) {
+        $item['field_s_news_rich_content'][] = ['field_p_wysiwyg' => [$item['field_s_news_media_contacts']]];
+      }
+      if (!empty($item['field_news_related_people'])) {
+        $related_people = '<p>Related People:</p>';
+        foreach ($item['field_news_related_people'] as $person_line) {
+          if (!empty($person_line['display_name'])) {
+            $related_people .= $person_line['display_name'] . '<br />';
+          }
+        }
+        $item['field_s_news_rich_content'][] = ['field_p_wysiwyg' => [$related_people]];
+      }
       $item['embedded_media'] = $this->embedded_media;
+      $item['field_media'] = $this->field_media;
       $items[$item['nid']] = $item;
     }
     $this->killSwitch->trigger();
