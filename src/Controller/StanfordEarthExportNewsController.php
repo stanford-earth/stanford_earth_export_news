@@ -40,6 +40,8 @@ class StanfordEarthExportNewsController extends ControllerBase
 
   protected $field_media;
 
+  protected $data_view_mode;
+
   /**
    * Entity Type Manager
    *
@@ -62,6 +64,7 @@ class StanfordEarthExportNewsController extends ControllerBase
     $this->paragraph_types = [];
     $this->embedded_media = [];
     $this->field_media = [];
+    $this->data_view_mode = [];
     $this->em = \Drupal::entityTypeManager();
   }
 
@@ -244,6 +247,18 @@ class StanfordEarthExportNewsController extends ControllerBase
         $this->embedded_media = array_merge($this->embedded_media, $embedded_images);
       }
     }
+    if (!empty($value) && strpos($value,"data-view-mode=") !== false) {
+      $val_pos = 0;
+      while (strpos($value, "data-view-mode=\"", $val_pos) !== false) {
+        $pos1 = strpos($value, "data-view-mode=\"", $val_pos) + 16;
+        $pos2 = strpos($value, "\"", $pos1);
+        $data_view_mode = substr($value, $pos1, $pos2-$pos1);
+        if (!empty($data_view_mode)) {
+          $this->data_view_mode[$data_view_mode] += 1;
+        }
+        $val_pos = $pos2+ 1;
+      }
+    }
     return $value;
   }
 
@@ -310,14 +325,14 @@ class StanfordEarthExportNewsController extends ControllerBase
         default: $category = '';
       }
     }
-
+/*
     if (empty($node) && empty($category) && empty($year)) {
       return [
         '#type' => 'markup',
         '#markup' => $this->t('You must include at least one url parameter such as<br />?year=2017, ?year=2018, etc.<br />or ?category=alumni, ?category=career-profile, ?category=comings-and-goings, ?category=deans-desk, ?category=media-mention, ?category=school-highlight, ?category=earth-matters, ?category=honors-and-awards'),
       ];
     }
-
+*/
 
     $items = [];
     $query = \Drupal::entityQuery('node')
@@ -412,7 +427,7 @@ class StanfordEarthExportNewsController extends ControllerBase
                     if (!empty($highlight_card)) {
                       foreach ($highlight_card as $contact) {
                         if (!empty($contact)) {
-                          $field_value .= '<span>' . reset($contact) . '</span><br />';
+                          $field_value .= '<span>' . reset($contact) . '</span>';
                         }
                       }
                     }
@@ -432,7 +447,8 @@ class StanfordEarthExportNewsController extends ControllerBase
             }
             $field_value = $paragraphs;
           }
-          else if ($field_name === 'field_s_news_summary') {
+          else if ($field_name === 'field_s_news_summary' ||
+            $field_name === 'field_s_news_teaser') {
             if (!empty($field_value[0]['value'])) {
               $field_value = [$this->expandMediaInfo($field_value[0]['value'])];
             }
@@ -464,7 +480,7 @@ class StanfordEarthExportNewsController extends ControllerBase
         $related_people = '<p>Related People:</p>';
         foreach ($item['field_news_related_people'] as $person_line) {
           if (!empty($person_line['display_name'])) {
-            $related_people .= $person_line['display_name'] . '<br />';
+            $related_people .= $person_line['display_name'];
           }
         }
         $item['field_s_news_rich_content'][] = ['field_p_wysiwyg' => [$related_people]];
@@ -481,6 +497,7 @@ class StanfordEarthExportNewsController extends ControllerBase
       'files' => $this->files,
       'videos' => $this->videos,
       'media_contact_content' => $this->other_stuff,
+      'data_view_mode' => $this->data_view_mode,
       'node_count' => [sizeof($items)],
       'nodes' => $items,
     ];

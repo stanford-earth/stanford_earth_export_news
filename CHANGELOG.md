@@ -1,5 +1,11 @@
 # Stanford Earth Export News
 
+8.x-1.2
+-------------------------------------------------------------------------
+_Release Date: 2023-05-19_
+
+- Add news teaser and remove <br /> from media contacts and people.
+
 8.x-1.1
 -------------------------------------------------------------------------
 _Release Date: 2023-05-04_
