@@ -422,17 +422,21 @@ class StanfordEarthExportNewsController extends ControllerBase
                   $field_value = '<p>' . reset($parray['field_highlight_cards_title']) . '</p>';
                 }
                 if (!empty($parray['field_p_section_highlight_cards'])) {
-                  $field_value .= '<p>';
                   foreach ($parray['field_p_section_highlight_cards'] as $highlight_card) {
-                    if (!empty($highlight_card)) {
-                      foreach ($highlight_card as $contact) {
-                        if (!empty($contact)) {
-                          $field_value .= '<span>' . reset($contact) . '</span>';
-                        }
-                      }
+                    $field_value .= '<p>';
+                    if (!empty($highlight_card['field_p_highlight_card_title'])) {
+                      $field_value .= reset($highlight_card['field_p_highlight_card_title']) . '<br />';
                     }
+                    if (!empty($highlight_card['field_p_highlight_card_subtitle'])) {
+                      $field_value .= reset($highlight_card['field_p_highlight_card_subtitle']) . '<br />';
+                    }
+                    if (!empty($highlight_card['field_p_highlight_card_desc'])) {
+                      $field_value .= strip_tags(reset($highlight_card['field_p_highlight_card_desc']),
+                          ['<a>']) ;
+                    }
+                    $field_value .= '</p>';
+                    $field_value = str_replace("\r\n", "", $field_value);
                   }
-                  $field_value .= '</p>';
                 }
               }
             }
@@ -477,13 +481,19 @@ class StanfordEarthExportNewsController extends ControllerBase
         $item['field_s_news_rich_content'][] = ['field_p_wysiwyg' => [$item['field_s_news_media_contacts']]];
       }
       if (!empty($item['field_news_related_people'])) {
-        $related_people = '<p>Related People:</p>';
+        $related_people = "";
         foreach ($item['field_news_related_people'] as $person_line) {
           if (!empty($person_line['display_name'])) {
-            $related_people .= $person_line['display_name'];
+            if (!empty($related_people)) {
+              $related_people .= ", ";
+            }
+            $related_people .= $person_line['display_name'] ;
           }
         }
-        $item['field_s_news_rich_content'][] = ['field_p_wysiwyg' => [$related_people]];
+        if (!empty($related_people)) {
+          $related_people = '<p>Related People: ' . $related_people . '</p>';
+          $item['field_s_news_rich_content'][] = ['field_p_wysiwyg' => [$related_people]];
+        }
       }
       $item['embedded_media'] = $this->embedded_media;
       $item['field_media'] = $this->field_media;
