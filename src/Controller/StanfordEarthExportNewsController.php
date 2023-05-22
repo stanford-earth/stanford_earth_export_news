@@ -467,17 +467,20 @@ class StanfordEarthExportNewsController extends ControllerBase
               foreach ($paragraphs as $subpara) {
                 if (!empty($subpara)) {
                   $xpara = [];
+                  $key = 'card';
                   if (array_key_exists('field_p_banner_cards', $subpara)) {
                     $xpara = $subpara['field_p_banner_cards'];
                     unset($subpara['field_p_banner_cards']);
+                    $key = 'field_p_banner_cards';
                   } else if (array_key_exists('field_p_feat_blocks_block', $subpara)) {
                     $xpara = $subpara['field_p_feat_blocks_block'];
                     unset($subpara['field_p_feat_blocks_block']);
+                    $key = 'field_p_feat_blocks_block';
                   }
                   $newParas[] = $subpara;
                   if (!empty($xpara)) {
                     foreach($xpara as $xsubpara) {
-                      $newParas[] = ['field_p_banner_cards' => [$xsubpara]];
+                      $newParas[] = [$key => [$xsubpara]];
                     }
                   }
                 }
