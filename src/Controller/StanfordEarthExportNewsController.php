@@ -280,11 +280,13 @@ class StanfordEarthExportNewsController extends ControllerBase
     } elseif ($request->getMethod() == 'POST') {
       $params = $request->request->all();
     }
-    $start = 'all';
-    $end = 'all';
     $node = '';
     if (!empty($params['node'])) {
       $node = $params['node'];
+    }
+    $year = '';
+    if (!empty($params['year'])) {
+      $year = $params['year'];
     }
     $category = '';
     if (!empty($params['category'])) {

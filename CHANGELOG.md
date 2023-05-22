@@ -1,5 +1,11 @@
 # Stanford Earth Export News
 
+8.x-1.4
+-------------------------------------------------------------------------
+_Release Date: 2023-05-22
+
+- New production release for SWS testing with oopsie fix.
+
 8.x-1.3
 -------------------------------------------------------------------------
 _Release Date: 2023-05-22
