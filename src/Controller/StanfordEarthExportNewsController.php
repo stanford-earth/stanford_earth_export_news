@@ -462,6 +462,28 @@ class StanfordEarthExportNewsController extends ControllerBase
             foreach ($field_value as $pid_value) {
               $paragraphs[] = $this->getParagraphValues($pid_value['target_id']);
             }
+            if (!empty($paragraphs)) {
+              $newParas = [];
+              foreach ($paragraphs as $subpara) {
+                if (!empty($subpara)) {
+                  $xpara = [];
+                  if (array_key_exists('field_p_banner_cards', $subpara)) {
+                    $xpara = $subpara['field_p_banner_cards'];
+                    unset($subpara['field_p_banner_cards']);
+                  } else if (array_key_exists('field_p_feat_blocks_block', $subpara)) {
+                    $xpara = $subpara['field_p_feat_blocks_block'];
+                    unset($subpara['field_p_feat_blocks_block']);
+                  }
+                  $newParas[] = $subpara;
+                  if (!empty($xpara)) {
+                    foreach($xpara as $xsubpara) {
+                      $newParas[] = ['field_p_banner_cards' => [$xsubpara]];
+                    }
+                  }
+                }
+              }
+              $paragraphs = $newParas;
+            }
             $field_value = $paragraphs;
           }
           $item[$field_name] = $field_value;
