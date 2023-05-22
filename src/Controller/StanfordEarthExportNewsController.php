@@ -325,14 +325,14 @@ class StanfordEarthExportNewsController extends ControllerBase
         default: $category = '';
       }
     }
-/*
-    if (empty($node) && empty($category) && empty($year)) {
+
+    if (empty($node) && empty($year)) {
       return [
         '#type' => 'markup',
-        '#markup' => $this->t('You must include at least one url parameter such as<br />?year=2017, ?year=2018, etc.<br />or ?category=alumni, ?category=career-profile, ?category=comings-and-goings, ?category=deans-desk, ?category=media-mention, ?category=school-highlight, ?category=earth-matters, ?category=honors-and-awards'),
+        '#markup' => $this->t('You must include at least one url parameter such as<br />?year=2017, ?year=2018, etc.<br />or ?node=123456'),
       ];
     }
-*/
+
 
     $items = [];
     $query = \Drupal::entityQuery('node')
