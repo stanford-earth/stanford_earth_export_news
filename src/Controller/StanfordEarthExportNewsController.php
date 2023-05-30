@@ -247,6 +247,7 @@ class StanfordEarthExportNewsController extends ControllerBase
         $this->embedded_media = array_merge($this->embedded_media, $embedded_images);
       }
     }
+    /*
     if (!empty($value) && strpos($value,"data-view-mode=") !== false) {
       $val_pos = 0;
       while (strpos($value, "data-view-mode=\"", $val_pos) !== false) {
@@ -259,6 +260,7 @@ class StanfordEarthExportNewsController extends ControllerBase
         $val_pos = $pos2+ 1;
       }
     }
+    */
     return $value;
   }
 
@@ -478,6 +480,14 @@ class StanfordEarthExportNewsController extends ControllerBase
                     $xpara = $subpara['field_p_feat_blocks_block'];
                     unset($subpara['field_p_feat_blocks_block']);
                     $key = 'field_p_feat_blocks_block';
+                  } else if (array_key_exists('field_p_filmstrip_slide', $subpara)) {
+                    $xpara = $subpara['field_p_filmstrip_slide'];
+                    unset($subpara['field_p_filmstrip_slide']);
+                    $key = 'field_p_filmstrip_slide';
+                  } else if (array_key_exists('field_p_tall_filmstrip_cards', $subpara)) {
+                    $xpara = $subpara['field_p_tall_filmstrip_cards'];
+                    unset($subpara['field_p_tall_filmstrip_cards']);
+                    $key = 'field_p_tall_filmstrip_cards';
                   }
                   $newParas[] = $subpara;
                   if (!empty($xpara)) {
