@@ -143,6 +143,33 @@ class StanfordEarthExportNewsController extends ControllerBase
     return $pvalues;
   }
 
+  private function getImageFileByUuid($field_value) {
+    /** @var \Drupal\file\Entity $file */
+    $file = $this->em->getStorage('file')
+      ->loadByProperties(['uuid' => $field_value]);
+    $file = reset($file);
+    $media_info = [];
+    if (!empty($file)) {
+      $url = "";
+      $file_uri = $file->getFileUri();
+      if (!empty($file_uri)) {
+        if (strpos($file_uri,"://") !== FALSE) {
+          $uri = str_replace(" ", "%20", substr($file_uri,strpos($file_uri,"://")+3));
+          $url = "https://earth.stanford.edu/sites/default/files/" . $uri;
+        }
+      }
+      $media_info = [
+        'type' => 'image',
+        'name' => $file->getFilename(),
+        'url' => $url,
+        'filemime' => $file->getMimeType(),
+        'filesize' => $file->getSize(),
+        'id' => "f" . strval($file->id()),
+      ];
+    }
+    return [$media_info];
+  }
+
   private function getMedia($field_value, $by_uuid = false) {
     $media_info = [];
     /** @var \Drupal\media\Entity $media */
@@ -217,7 +244,6 @@ class StanfordEarthExportNewsController extends ControllerBase
       $media_info['type'] = $bundle;
       unset($media_info['mid']);
       return [$media_info];
-      //return ['id' => strval($mid), 'type' => $bundle];
     }
     else {
       return [];
@@ -225,8 +251,9 @@ class StanfordEarthExportNewsController extends ControllerBase
   }
 
   private function expandMediaInfo($value) {
+    $embedded_images = [];
+
     if (!empty($value) && strpos($value,"<drupal-media") !== false) {
-      $embedded_images = [];
       $val_pos = 0;
       while (strpos($value, "<drupal-media", $val_pos) !== false) {
         $pos1 = strpos($value, "<drupal-media", $val_pos);
@@ -238,29 +265,95 @@ class StanfordEarthExportNewsController extends ControllerBase
         if (!empty($mid[0]['id'])) {
           $embedded_images[$uuid] = $mid[0];
           $embedded_images[$uuid]['embed'] = $uuid;
-          //$newvalue = str_replace($uuid, '['.$mid[0]['id'].']',$newvalue);
         }
         $val_pos = $pos4+ 13;
       }
-      if (!empty($embedded_images)) {
-        //$newvalue['images'] = $embedded_images;
-        $this->embedded_media = array_merge($this->embedded_media, $embedded_images);
-      }
     }
-    /*
-    if (!empty($value) && strpos($value,"data-view-mode=") !== false) {
+
+    if (!empty($value) && strpos($value,"<img") !== false) {
+      $replacements = [];
       $val_pos = 0;
-      while (strpos($value, "data-view-mode=\"", $val_pos) !== false) {
-        $pos1 = strpos($value, "data-view-mode=\"", $val_pos) + 16;
-        $pos2 = strpos($value, "\"", $pos1);
-        $data_view_mode = substr($value, $pos1, $pos2-$pos1);
-        if (!empty($data_view_mode)) {
-          $this->data_view_mode[$data_view_mode] += 1;
+      while (strpos($value, "<img ", $val_pos) !== FALSE) {
+        $pos1 = strpos($value, "<img ", $val_pos);
+        $pos2 = strpos($value, "/>", $pos1);
+        if ($pos2 === FALSE) {
+          break;
         }
-        $val_pos = $pos2+ 1;
+        $val_pos = $pos2;
+        $img_str = substr($value, $pos1, ($pos2 + 2) - $pos1);
+        if (strpos($img_str, "data-entity-uuid") !== FALSE) {
+          $data_pairs = [];
+          $cur_key = "";
+          $cur_val = "";
+          $pairs = explode(" ", $img_str);
+          foreach ($pairs as $pair) {
+            if (strpos($pair, "=") !== FALSE) {
+              if (!empty($cur_key)) {
+                $data_pairs[$cur_key] = str_replace("\"", "", $cur_val);
+              }
+              $keyval = explode("=", $pair);
+              if (is_array($keyval) && sizeof($keyval) == 2 && !empty($keyval[0]) && !empty($keyval[1])) {
+                $cur_key = $keyval[0];
+                $cur_val = $keyval[1];
+              }
+              else {
+                $cur_key = "";
+                $cur_val = "";
+              }
+            }
+            else {
+              if (!empty($cur_key) && $pair !== "/>") {
+                $cur_val .= " " . $pair;
+              }
+            }
+          }
+          if (!empty($cur_key)) {
+            $data_pairs[$cur_key] = str_replace("\"", "", $cur_val);
+          }
+          if (!empty($data_pairs['data-entity-uuid'])) {
+            $uuid = $data_pairs['data-entity-uuid'];
+            $mid = $this->getImageFileByUuid($uuid);
+            if (!empty($data_pairs['alt'])) {
+              $mid[0]['alt'] = $data_pairs['alt'];
+            }
+            if (!empty($data_pairs['width'])) {
+              $mid[0]['width'] = $data_pairs['width'];
+            }
+            if (!empty($data_pairs['height'])) {
+              $mid[0]['height'] = $data_pairs['height'];
+            }
+            if (!empty($mid[0]['id'])) {
+              $embedded_images[$uuid] = $mid[0];
+              $embedded_images[$uuid]['embed'] = $uuid;
+            }
+            $media_tag = "<drupal-media ";
+            if (!empty($data_pairs['data-align'])) {
+              $media_tag .= "data-align=\"" . $data_pairs['data-align'] . "\" ";
+            }
+            if (!empty($data_pairs['data-caption'])) {
+              $media_tag .= "data-caption=\"" . $data_pairs['data-caption'] . "\" ";
+              $hash = substr(md5($data_pairs['data-caption']),0,5);
+              $media_tag .= "data-caption-hash=\"" . $hash . "\" ";
+            }
+            $media_tag .= "data-entity-type=\"media\" ";
+            $media_tag .= "data-entity-uuid=\"" . $uuid . "\" ";
+            $media_tag .= "data-view-mode=\"default\"></drupal-media>";
+            $replacements[] = [
+              'old' => $img_str,
+              'new' => $media_tag,
+            ];
+          }
+        }
+      }
+      foreach($replacements as $replacement) {
+        $value = str_replace($replacement['old'], $replacement['new'], $value);
       }
     }
-    */
+
+    if (!empty($embedded_images)) {
+      $this->embedded_media = array_merge($this->embedded_media, $embedded_images);
+    }
+
     return $value;
   }
 
