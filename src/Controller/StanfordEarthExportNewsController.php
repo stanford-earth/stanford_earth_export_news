@@ -154,13 +154,17 @@ class StanfordEarthExportNewsController extends ControllerBase
       $file_uri = $file->getFileUri();
       if (!empty($file_uri)) {
         if (strpos($file_uri,"://") !== FALSE) {
-          $uri = str_replace(" ", "%20", substr($file_uri,strpos($file_uri,"://")+3));
+          $uri = str_replace("&#039;", "", substr($file_uri,strpos($file_uri,"://")+3));
+          $uri = str_replace("?", "", $uri);
           $url = "https://earth.stanford.edu/sites/default/files/" . $uri;
         }
       }
+      $fixname = $file->getFilename();
+      $fixname = str_replace("&#039;", "", $fixname);
+      $fixname = str_replace("?", "", $fixname);
       $media_info = [
         'type' => 'image',
-        'name' => $file->getFilename(),
+        'name' => $fixname,
         'url' => $url,
         'filemime' => $file->getMimeType(),
         'filesize' => $file->getSize(),
@@ -209,7 +213,10 @@ class StanfordEarthExportNewsController extends ControllerBase
       $media_info['name'] = "";
       $name = $media->get('name')->getValue();
       if (!empty($name[0]['value'])) {
-        $media_info['name'] = $name[0]['value'];
+        $fixname = $name[0]['value'];
+        $fixname = str_replace("&#039;", "", $fixname);
+        $fixname = str_replace("?", "", $fixname);
+        $media_info['name'] = $fixname;
       }
       if (!empty($media_info['target_id'])) {
         $fid = $media_info['target_id'];
@@ -219,7 +226,8 @@ class StanfordEarthExportNewsController extends ControllerBase
           $media_info['url'] = "";
           if (!empty($file_uri)) {
             if (strpos($file_uri,"://") !== FALSE) {
-              $uri = str_replace(" ", "%20", substr($file_uri,strpos($file_uri,"://")+3));
+              $uri = str_replace("&#039;", "", substr($file_uri,strpos($file_uri,"://")+3));
+              $uri = str_replace("?", "", $uri);
               $media_info['url'] = "https://earth.stanford.edu/sites/default/files/" . $uri;
             }
           }
