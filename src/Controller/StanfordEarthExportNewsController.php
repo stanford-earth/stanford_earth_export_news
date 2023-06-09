@@ -293,29 +293,35 @@ class StanfordEarthExportNewsController extends ControllerBase
           $data_pairs = [];
           $cur_key = "";
           $cur_val = "";
+          $started = false;
           $pairs = explode(" ", $img_str);
           foreach ($pairs as $pair) {
-            if (strpos($pair, "=") !== FALSE) {
-              if (!empty($cur_key)) {
-                $data_pairs[$cur_key] = str_replace("\"", "", $cur_val);
-              }
-              $keyval = explode("=", $pair);
-              if (is_array($keyval) && sizeof($keyval) == 2 && !empty($keyval[0]) && !empty($keyval[1])) {
-                $cur_key = $keyval[0];
-                $cur_val = $keyval[1];
-              }
-              else {
-                $cur_key = "";
-                $cur_val = "";
+            if ($started) {
+              $cur_val .= " " . $pair;
+              if (strpos($pair, "\"") !== FALSE) {
+                if (!empty($cur_key)) {
+                  $data_pairs[$cur_key] = $cur_val;
+                }
+                $started = FALSE;
               }
             }
             else {
-              if (!empty($cur_key) && $pair !== "/>") {
-                $cur_val .= " " . $pair;
+              if (strpos($pair, "=\"") !== FALSE) {
+                $keyval = explode("=", $pair, 2);
+                if (sizeof($keyval) == 2 && !empty($keyval[0])) {
+                  $cur_key = $keyval[0];
+                  $cur_val = $keyval[1];
+                  if (str_ends_with($keyval[1], "\"")) {
+                    $data_pairs[$cur_key] = $cur_val;
+                  }
+                  else {
+                    $started = TRUE;
+                  }
+                }
               }
             }
           }
-          if (!empty($cur_key)) {
+          foreach ($data_pairs as $cur_key => $cur_val) {
             $data_pairs[$cur_key] = str_replace("\"", "", $cur_val);
           }
           if (!empty($data_pairs['data-entity-uuid'])) {
@@ -589,6 +595,10 @@ class StanfordEarthExportNewsController extends ControllerBase
                     $xpara = $subpara['field_p_tall_filmstrip_cards'];
                     unset($subpara['field_p_tall_filmstrip_cards']);
                     $key = 'field_p_tall_filmstrip_cards';
+                  } else if (array_key_exists('field_p_doub_film_cards', $subpara)) {
+                    $xpara = $subpara['field_p_doub_film_cards'];
+                    unset($subpara['field_p_doub_film_cards']);
+                    $key = 'field_p_douba-film_cards';
                   }
                   $newParas[] = $subpara;
                   if (!empty($xpara)) {
