@@ -598,7 +598,11 @@ class StanfordEarthExportNewsController extends ControllerBase
                   } else if (array_key_exists('field_p_doub_film_cards', $subpara)) {
                     $xpara = $subpara['field_p_doub_film_cards'];
                     unset($subpara['field_p_doub_film_cards']);
-                    $key = 'field_p_douba-film_cards';
+                    $key = 'field_p_doub_film_cards';
+                  } else if (array_key_exists('field_p_link_banner_links', $subpara)) {
+                    $xpara = $subpara['field_p_link_banner_links'];
+                    unset($subpara['field_p_link_banner_links']);
+                    $key = 'field_p_link_banner_links';
                   }
                   $newParas[] = $subpara;
                   if (!empty($xpara)) {
