@@ -119,6 +119,13 @@ class StanfordEarthExportNewsController extends ControllerBase
             $this->paragraph_types[$field_name] = 1;
           }
           $pval = $paragraph->get($field_name)->getValue();
+          if (strpos($field_name, "link") !== false && !empty($pval) && is_array($pval) &&
+            !empty($pval[0]['uri']) && str_starts_with($pval[0]['uri'], 'entity:node')) {
+              $uri = $pval[0]['uri'];
+              $alias = \Drupal::service('path_alias.manager')
+                ->getAliasByPath(str_replace("entity:", "/", $uri));
+              $pval[0]['uri'] = "https://earth.stanford.edu" . $alias;
+          }
           if (!empty($pval)) {
             foreach ($pval as $ppval) {
               if (!empty($ppval['value'])) {
