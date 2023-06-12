@@ -537,7 +537,7 @@ class StanfordEarthExportNewsController extends ControllerBase
             if (!empty($paragraphs)) {
               foreach ($paragraphs as $parray) {
                 if (!empty($parray['field_highlight_cards_title'])) {
-                  $field_value = '<p>' . reset($parray['field_highlight_cards_title']) . '</p>';
+                  $field_value = '<h2>' . reset($parray['field_highlight_cards_title']) . '</h2>';
                 }
                 if (!empty($parray['field_p_section_highlight_cards'])) {
                   foreach ($parray['field_p_section_highlight_cards'] as $highlight_card) {
@@ -639,6 +639,7 @@ class StanfordEarthExportNewsController extends ControllerBase
       if (!empty($item['field_s_news_media_contacts'])) {
         $item['field_s_news_rich_content'][] = ['field_p_wysiwyg' => [$item['field_s_news_media_contacts']]];
       }
+      /*
       if (!empty($item['field_news_related_people'])) {
         $related_people = "";
         foreach ($item['field_news_related_people'] as $person_line) {
@@ -654,6 +655,7 @@ class StanfordEarthExportNewsController extends ControllerBase
           $item['field_s_news_rich_content'][] = ['field_p_wysiwyg' => [$related_people]];
         }
       }
+      */
       $item['embedded_media'] = $this->embedded_media;
       $item['field_media'] = $this->field_media;
       $items[$item['nid']] = $item;
