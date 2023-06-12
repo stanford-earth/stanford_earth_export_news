@@ -1,5 +1,11 @@
 # Stanford Earth Export News
 
+8.x-1.5
+-------------------------------------------------------------------------
+_Release Date: 2023-06-12
+
+- Production release with remaining paragraph types and various fixes.
+
 8.x-1.4
 -------------------------------------------------------------------------
 _Release Date: 2023-05-22
