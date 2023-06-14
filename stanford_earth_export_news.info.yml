@@ -2,5 +2,5 @@ name: 'Stanford Earth Export News'
 type: module
 description: 'Export News content to JSON.'
 package: Stanford
-version: 8.x-1.5
+version: 8.x-1.x
 core_version_requirement: ^8.9 || ^9
