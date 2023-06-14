@@ -1,5 +1,11 @@
 # Stanford Earth Export News
 
+8.x-1.6
+-------------------------------------------------------------------------
+_Release Date: 2023-06-14
+
+- Release with "big" caption counts and fix for images named like "untitled".
+
 8.x-1.5
 -------------------------------------------------------------------------
 _Release Date: 2023-06-12

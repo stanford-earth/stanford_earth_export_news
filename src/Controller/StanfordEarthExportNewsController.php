@@ -274,7 +274,7 @@ class StanfordEarthExportNewsController extends ControllerBase
           $newname = $fpath . "/" . $newbasename; //sdss_" . $fid . "." . $fileinfo['extension'];
           $update_media_info = true;
           if (!file_exists($newname)) {
-           $update_media_infox = copy($oldname, $newname);
+           $update_media_info = copy($oldname, $newname);
           }
           if ($update_media_info) {
             $media_info['name'] = $newbasename;
