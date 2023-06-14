@@ -9,6 +9,7 @@ use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\DependencyInjection\ContainerInterface;
 use Drupal\Core\PageCache\ResponsePolicy\KillSwitch;
 use Drupal\Core\Entity\Query\QueryInterface;
+use Drupal\Core\Mail\MailFormatHelper;
 
 /**
  * Export news content nodes to JSON.
@@ -33,6 +34,9 @@ class StanfordEarthExportNewsController extends ControllerBase
   protected $files;
 
   protected $videos;
+
+  protected $big_photo_cred_count;
+  protected $big_image_cred_count;
 
   protected $paragraph_types;
 
@@ -119,6 +123,20 @@ class StanfordEarthExportNewsController extends ControllerBase
             $this->paragraph_types[$field_name] = 1;
           }
           $pval = $paragraph->get($field_name)->getValue();
+          if ($field_name === 'field_p_hero_banner_photo_credit' ||
+            $field_name === 'field_p_responsive_image_cred') {
+            $txt_test = $pval[0]['value'];
+            $txt_test = MailFormatHelper::htmlToText($txt_test);
+            $txt_test = htmlspecialchars($txt_test);
+            if (strlen($txt_test) > 1000) {
+              if ($field_name === 'field_p_hero_banner_photo_credit') {
+                $this->big_photo_cred_count += 1;
+              }
+              else if ($field_name === 'field_p_responsive_image_cred') {
+                $this->big_image_cred_count += 1;
+              }
+            }
+          }
           if (strpos($field_name, "link") !== false && !empty($pval) && is_array($pval) &&
             !empty($pval[0]['uri']) && str_starts_with($pval[0]['uri'], 'entity:node')) {
               $uri = $pval[0]['uri'];
@@ -246,6 +264,23 @@ class StanfordEarthExportNewsController extends ControllerBase
     unset($media_info['target_id']);
     if (isset($bundle)) {
       if ($bundle === 'image') {
+        if (stripos($media_info['name'], "untitled") !== false ||
+          stripos($media_info['url'], "untitled") !== false) {
+          $fileinfo = pathinfo($media_info['url']);
+          $sites_path = substr($fileinfo['dirname'], strpos($fileinfo['dirname'], "/sites"));
+          $fpath = $_SERVER['DOCUMENT_ROOT'] . $sites_path;
+          $oldname = $fpath . "/" . $fileinfo['basename'];
+          $newbasename = "sdss_" . $fid . "." . $fileinfo['extension'];
+          $newname = $fpath . "/" . $newbasename; //sdss_" . $fid . "." . $fileinfo['extension'];
+          $update_media_info = true;
+          if (!file_exists($newname)) {
+           $update_media_infox = copy($oldname, $newname);
+          }
+          if ($update_media_info) {
+            $media_info['name'] = $newbasename;
+            $media_info['url'] = str_replace($fileinfo['basename'], $newbasename, $media_info['url']);
+          }
+        }
         $this->images[strval($mid)] = $media_info;
         if (!$by_uuid) {
           $this->field_media[strval($mid)] = $media_info;
@@ -334,6 +369,7 @@ class StanfordEarthExportNewsController extends ControllerBase
           if (!empty($data_pairs['data-entity-uuid'])) {
             $uuid = $data_pairs['data-entity-uuid'];
             $mid = $this->getImageFileByUuid($uuid);
+
             if (!empty($data_pairs['alt'])) {
               $mid[0]['alt'] = $data_pairs['alt'];
             }
@@ -451,7 +487,8 @@ class StanfordEarthExportNewsController extends ControllerBase
       ];
     }
 
-
+    $this->big_image_cred_count = 0;
+    $this->big_photo_cred_count = 0;
     $items = [];
     $query = \Drupal::entityQuery('node')
       ->condition('status', 1)
@@ -662,6 +699,8 @@ class StanfordEarthExportNewsController extends ControllerBase
     }
     $this->killSwitch->trigger();
     $json = [
+      'big_photo_creds' => $this->big_photo_cred_count,
+      'big_image_creds' => $this->big_image_cred_count,
       'terms' => $this->taxonomyTerms,
       'paragraph_types' => $this->paragraph_types,
       'images' => $this->images,
